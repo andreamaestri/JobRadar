@@ -75,7 +75,12 @@ def read_root(
 ):
     offline = False
     try:
-        result = preview_jobs(limit=50, remote_only=remote_only)
+        result = preview_jobs(
+            limit=50,
+            remote_only=remote_only,
+            location=location or None,
+            radius_km=radius_km if location else None,
+        )
         all_jobs = result.jobs
     except httpx.HTTPError:
         all_jobs = FALLBACK_JOBS

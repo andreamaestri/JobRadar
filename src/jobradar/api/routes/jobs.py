@@ -25,5 +25,5 @@ def read_jobs_preview(
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=502,
-            detail="Failed to fetch jobs from Arbeitnow",
+            detail="Failed to fetch jobs from the configured providers",
         ) from exc
