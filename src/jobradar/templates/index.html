@@ -59,12 +59,29 @@
             <p class="text-success fw-semibold small mb-1">LATEST ROLES</p>
             <h2 class="h3 mb-0">{{ jobs|length }} opportunities to explore</h2>
           </div>
-          <form class="d-flex align-items-center gap-3" method="get" action="/">
-            <div class="form-check form-switch mb-0">
+          <form class="row gx-2 gy-2 align-items-center" method="get" action="/">
+            <div class="col-auto">
+              <label class="visually-hidden" for="location">Location</label>
+              <input id="location" name="location" value="{{ location }}" class="form-control" type="search" placeholder="City or location" aria-label="City or location">
+            </div>
+            <div class="col-auto">
+              <label class="visually-hidden" for="radius-km">Search radius</label>
+              <select id="radius-km" name="radius_km" class="form-select" aria-label="Search radius">
+                {% for option in [10, 25, 50, 100, 250, 500] %}
+                  <option value="{{ option }}" {% if radius_km == option %}selected{% endif %}>Within {{ option }} km</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-auto form-check form-switch mb-0">
               <input id="remote-only" name="remote_only" value="true" class="form-check-input" type="checkbox" role="switch" {% if remote_only %}checked{% endif %}>
               <label class="form-check-label" for="remote-only">Remote only</label>
             </div>
-            <button class="btn btn-dark" type="submit">Refresh</button>
+            <div class="col-auto">
+              <button class="btn btn-dark" type="submit">Search</button>
+            </div>
+            {% if location or remote_only %}
+              <div class="col-auto"><a class="btn btn-link text-secondary" href="/">Clear</a></div>
+            {% endif %}
           </form>
         </div>
 
