@@ -4,10 +4,11 @@ body { background: var(--bs-body-bg); }
 .status-dot { width: .5rem; height: .5rem; border-radius: 50%; background: #f1b84b; }
 .status-online .status-dot { background: #198754; }
 .status-offline .status-dot { background: #dc3545; }
-.job-card { height: 100%; }
+.job-card { height: 100%; min-width: 0; }
 .job-company { color: var(--bs-success); font-size: .75rem; font-weight: 700; text-transform: uppercase; }
 .job-title { font-size: 1.2rem; }
 .job-meta { color: var(--bs-secondary-color); font-size: .875rem; }
+.job-company, .job-title, .job-meta { overflow-wrap: anywhere; }
 .offline-banner { display: flex; align-items: center; }
 .loading-state, .empty-state { border: 1px dashed var(--bs-border-color); border-radius: var(--bs-border-radius); padding: 4rem 1rem; text-align: center; color: var(--bs-secondary-color); }
 .tag { background: var(--bs-light); border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius-pill); color: var(--bs-secondary-color); font-size: .75rem; padding: .3rem .55rem; }
