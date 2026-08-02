@@ -1,10 +1,13 @@
+from functools import lru_cache
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
+from typing import Any
 
 import httpx
 from fastapi import FastAPI, Query, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import HttpUrl
 
 from jobradar.api.routes.jobs import router as jobs_router
 from jobradar.schemas.job import Job
@@ -23,6 +26,7 @@ CITY_COORDINATES = {
     "vienna": (48.2082, 16.3738),
     "zurich": (47.3769, 8.5417),
 }
+GEOCODING_API_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
 app = FastAPI()
 
@@ -38,7 +42,7 @@ FALLBACK_JOBS = [
         title="Senior Product Designer",
         location="Berlin · Hybrid",
         tags=["Design", "Full time"],
-        url="https://www.arbeitnow.com/",
+        url=HttpUrl("https://www.arbeitnow.com/"),
         description_html="",
     ),
     Job(
@@ -49,7 +53,7 @@ FALLBACK_JOBS = [
         location="Remote · Europe",
         remote=True,
         tags=["Engineering", "TypeScript"],
-        url="https://www.arbeitnow.com/",
+        url=HttpUrl("https://www.arbeitnow.com/"),
         description_html="",
     ),
     Job(
@@ -59,7 +63,7 @@ FALLBACK_JOBS = [
         title="Community & Partnerships Lead",
         location="Amsterdam · Hybrid",
         tags=["Community", "Growth"],
-        url="https://www.arbeitnow.com/",
+        url=HttpUrl("https://www.arbeitnow.com/"),
         description_html="",
     ),
 ]
@@ -115,7 +119,7 @@ def filter_jobs(
     if not search:
         return filtered
 
-    origin = CITY_COORDINATES.get(search)
+    origin = _geocode_location(search) or CITY_COORDINATES.get(search)
     matches: list[Job] = []
     for job in filtered:
         job_location = (job.location or "").lower()
@@ -124,17 +128,49 @@ def filter_jobs(
             continue
         if origin is None:
             continue
-        job_coordinates = next(
-            (
-                coordinates
-                for city, coordinates in CITY_COORDINATES.items()
-                if city in job_location
-            ),
-            None,
-        )
+        job_coordinates = _geocode_location(job_location)
+        if job_coordinates is None:
+            job_coordinates = next(
+                (
+                    coordinates
+                    for city, coordinates in CITY_COORDINATES.items()
+                    if city in job_location
+                ),
+                None,
+            )
         if job_coordinates and _distance_km(origin, job_coordinates) <= radius_km:
             matches.append(job)
     return matches
+
+
+@lru_cache(maxsize=256)
+def _geocode_location(location: str) -> tuple[float, float] | None:
+    """Resolve a place name using Open-Meteo, while keeping failures non-fatal."""
+    if len(location) < 2 or "remote" in location.lower():
+        return None
+    try:
+        response = httpx.get(
+            GEOCODING_API_URL,
+            params={
+                "name": location,
+                "count": 1,
+                "language": "en",
+                "format": "json",
+            },
+            timeout=3.0,
+        )
+        response.raise_for_status()
+        payload: Any = response.json()
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        if not results or not isinstance(results[0], dict):
+            return None
+        latitude = results[0].get("latitude")
+        longitude = results[0].get("longitude")
+        if isinstance(latitude, (int, float)) and isinstance(longitude, (int, float)):
+            return float(latitude), float(longitude)
+    except (httpx.HTTPError, ValueError, TypeError):
+        return None
+    return None
 
 
 def _distance_km(
