@@ -1,11 +1,22 @@
 from fastapi import FastAPI
 
+from jobradar.api.routes.jobs import router as jobs_router
+
 app = FastAPI()
+
+app.include_router(jobs_router)
 
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to JobRadar!"}
+    return {
+        "app": "JobRadar",
+        "message": "Welcome to JobRadar!",
+        "endpoints": {
+            "about": "/about",
+            "jobs_preview": "/api/jobs/preview",
+        },
+    }
 
 
 @app.get("/about")

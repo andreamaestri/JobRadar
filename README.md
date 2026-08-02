@@ -182,7 +182,7 @@ Every provider is isolated behind an adapter so the rest of the application rema
 
 ```
 jobradar/
-├── app/
+├── jobradar/
 │   ├── api/            # FastAPI routes
 │   ├── core/           # Config, settings, logging
 │   ├── database/       # Engine, session, base models
@@ -322,13 +322,13 @@ uv run python -m app.sync
 ### Start the development server
 
 ```bash
-uv run fastapi dev app/main.py
+uv run fastapi dev jobradar/main.py
 ```
 
 or
 
 ```bash
-uv run uvicorn app.main:app --reload
+uv run uvicorn jobradar.main:app --reload
 ```
 
 Visit:
