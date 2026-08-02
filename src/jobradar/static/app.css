@@ -15,3 +15,5 @@ body { background: var(--bs-body-bg); }
 .job-link { color: var(--bs-body-color); font-size: .875rem; font-weight: 600; text-decoration: none; }
 .remote-badge { background: var(--bs-success); border-radius: var(--bs-border-radius-pill); color: #fff; font-size: .7rem; padding: .3rem .55rem; }
 .footer-line { border-top: 1px solid var(--bs-border-color); color: var(--bs-secondary-color); font-size: .75rem; }
+.location-search { min-width: 220px; }
+.location-search .list-group { z-index: 10; max-height: 280px; overflow-y: auto; }

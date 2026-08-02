@@ -144,16 +144,18 @@ def filter_jobs(
 
 
 @lru_cache(maxsize=256)
-def _geocode_location(location: str) -> tuple[float, float] | None:
-    """Resolve a place name using Open-Meteo, while keeping failures non-fatal."""
+def _search_locations(
+    location: str,
+) -> tuple[tuple[str, float, float, str, str], ...]:
+    """Search place names using Open-Meteo, while keeping failures non-fatal."""
     if len(location) < 2 or "remote" in location.lower():
-        return None
+        return ()
     try:
         response = httpx.get(
             GEOCODING_API_URL,
             params={
                 "name": location,
-                "count": 1,
+                "count": 6,
                 "language": "en",
                 "format": "json",
             },
@@ -162,14 +164,37 @@ def _geocode_location(location: str) -> tuple[float, float] | None:
         response.raise_for_status()
         payload: Any = response.json()
         results = payload.get("results", []) if isinstance(payload, dict) else []
-        if not results or not isinstance(results[0], dict):
-            return None
-        latitude = results[0].get("latitude")
-        longitude = results[0].get("longitude")
-        if isinstance(latitude, (int, float)) and isinstance(longitude, (int, float)):
-            return float(latitude), float(longitude)
+        locations = []
+        for result in results:
+            if not isinstance(result, dict):
+                continue
+            name = result.get("name")
+            latitude = result.get("latitude")
+            longitude = result.get("longitude")
+            if (
+                not isinstance(name, str)
+                or not isinstance(latitude, (int, float))
+                or not isinstance(longitude, (int, float))
+            ):
+                continue
+            locations.append(
+                (
+                    name,
+                    float(latitude),
+                    float(longitude),
+                    str(result.get("admin1") or ""),
+                    str(result.get("country") or ""),
+                )
+            )
+        return tuple(locations)
     except (httpx.HTTPError, ValueError, TypeError):
-        return None
+        return ()
+
+
+def _geocode_location(location: str) -> tuple[float, float] | None:
+    results = _search_locations(location)
+    if results:
+        return results[0][1], results[0][2]
     return None
 
 
@@ -193,6 +218,24 @@ def read_about():
         "app": "JobRadar",
         "purpose": "Help track job opportunities",
     }
+
+
+@app.get("/api/geocode", include_in_schema=False)
+def geocode_suggestions(
+    query: str = Query(default="", min_length=2, max_length=80),
+) -> list[dict[str, str]]:
+    suggestions = []
+    for name, latitude, longitude, admin1, country in _search_locations(query):
+        label = ", ".join(part for part in (name, admin1, country) if part)
+        suggestions.append(
+            {
+                "label": label,
+                "value": name,
+                "latitude": str(latitude),
+                "longitude": str(longitude),
+            }
+        )
+    return suggestions
 
 
 @app.get("/jobs/{job_id}")

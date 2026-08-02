@@ -62,7 +62,10 @@
           <form class="row gx-2 gy-2 align-items-center" method="get" action="/">
             <div class="col-auto">
               <label class="visually-hidden" for="location">Location</label>
-              <input id="location" name="location" value="{{ location }}" class="form-control" type="search" placeholder="City or postcode" aria-label="City or postcode">
+              <div class="location-search position-relative">
+                <input id="location" name="location" value="{{ location }}" class="form-control" type="search" placeholder="City or postcode" aria-label="City or postcode" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="location-suggestions" aria-expanded="false">
+                <div id="location-suggestions" class="list-group position-absolute top-100 start-0 end-0 shadow d-none" role="listbox"></div>
+              </div>
             </div>
             <div class="col-auto">
               <label class="visually-hidden" for="radius-km">Search radius</label>
@@ -113,9 +116,10 @@
       </section>
     </main>
 
-    <footer class="container py-4 footer-line d-flex justify-content-between flex-wrap gap-2">
+  <footer class="container py-4 footer-line d-flex justify-content-between flex-wrap gap-2">
       <span>JobRadar · Keep looking up.</span>
       <span>Powered by <a href="https://www.arbeitnow.com" target="_blank" rel="noreferrer">Arbeitnow</a></span>
-    </footer>
-  </body>
+  </footer>
+  <script src="{{ url_for('static', path='location-search.js') }}"></script>
+</body>
 </html>
