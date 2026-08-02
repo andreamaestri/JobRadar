@@ -8,6 +8,7 @@ from jobradar.schemas.job import Job
 
 ARBEITNOW_SOURCE = "arbeitnow"
 ARBEITNOW_API_URL = "https://www.arbeitnow.com/api/job-board-api"
+MAX_ARBEITNOW_PAGES = 5
 
 
 def fetch_arbeitnow_jobs(*, limit: int, remote_only: bool = False) -> list[Job]:
@@ -16,7 +17,7 @@ def fetch_arbeitnow_jobs(*, limit: int, remote_only: bool = False) -> list[Job]:
 
     jobs: list[Job] = []
     page = 1
-    while len(jobs) < limit:
+    while len(jobs) < limit and page <= MAX_ARBEITNOW_PAGES:
         response = httpx.get(
             ARBEITNOW_API_URL,
             params={"page": page},

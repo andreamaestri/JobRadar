@@ -1,5 +1,8 @@
 const locationInput = document.querySelector("#location");
 const suggestions = document.querySelector("#location-suggestions");
+const searchForm = document.querySelector("#job-search-form");
+const downloadButton = document.querySelector("#download-button");
+const downloadProgress = document.querySelector("#download-progress");
 let timer;
 let controller;
 
@@ -63,4 +66,10 @@ locationInput.addEventListener("focus", () => {
 });
 document.addEventListener("click", event => {
   if (!event.target.closest(".location-search")) closeSuggestions();
+});
+
+searchForm.addEventListener("submit", () => {
+  downloadButton.disabled = true;
+  downloadButton.textContent = "Downloading…";
+  downloadProgress.classList.remove("d-none");
 });

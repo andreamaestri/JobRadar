@@ -5,6 +5,9 @@ import httpx
 from jobradar.adapters.arbeitnow import fetch_arbeitnow_jobs
 from jobradar.adapters.arbeitsagentur import fetch_arbeitsagentur_jobs
 from jobradar.schemas.job import JobPreviewResponse
+from jobradar.services.cache import load_cached_jobs, save_cached_jobs
+
+MAX_JOB_DOWNLOAD_LIMIT = 25
 
 
 def preview_jobs(
@@ -14,6 +17,7 @@ def preview_jobs(
     location: str | None = None,
     radius_km: int | None = None,
 ) -> JobPreviewResponse:
+    limit = min(limit, MAX_JOB_DOWNLOAD_LIMIT)
     jobs = []
     failures: list[httpx.HTTPError] = []
     for fetcher in (
@@ -30,8 +34,18 @@ def preview_jobs(
         except httpx.HTTPError as exc:
             failures.append(exc)
 
-    if not jobs and failures:
-        raise failures[0]
+    if jobs or not failures:
+        save_cached_jobs(jobs)
+    else:
+        cached_jobs = load_cached_jobs()
+        if cached_jobs is None:
+            raise failures[0]
+        jobs = [job for job in cached_jobs if not remote_only or job.remote]
+        return JobPreviewResponse(
+            source="cache",
+            count=min(len(jobs), limit),
+            jobs=jobs[:limit],
+        )
 
     jobs.sort(
         key=lambda job: job.posted_at or datetime.min.replace(tzinfo=UTC),

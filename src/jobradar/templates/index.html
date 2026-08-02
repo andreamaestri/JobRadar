@@ -21,7 +21,7 @@
         </a>
         <span class="status-pill">
           <span class="status-dot {{ 'bg-danger' if offline else 'bg-success' }}"></span>
-          {{ 'Offline mode' if offline else 'Live feed' }}
+          {{ 'Offline mode' if offline else ('Live feed' if location else 'Choose a location') }}
         </span>
       </div>
     </nav>
@@ -49,21 +49,21 @@
         {% if offline %}
           <div class="alert alert-warning d-flex align-items-center" role="status">
             <span class="me-2">◌</span>
-            <span>The live feed is unavailable, so you’re seeing a starter feed.</span>
-            <a class="btn btn-sm btn-outline-dark ms-auto" href="/?remote_only={{ 'true' if remote_only else 'false' }}">Try again</a>
+            <span>The live feed is unavailable. Previously downloaded jobs appear here when available.</span>
+            <a class="btn btn-sm btn-outline-dark ms-auto" href="/?location={{ location|urlencode }}&amp;radius_km={{ radius_km }}&amp;remote_only={{ 'true' if remote_only else 'false' }}">Try again</a>
           </div>
         {% endif %}
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
           <div>
-            <p class="text-success fw-semibold small mb-1">LATEST ROLES</p>
-            <h2 class="h3 mb-0">{{ jobs|length }} opportunities to explore</h2>
+            <p class="text-success fw-semibold small mb-1">{{ 'LATEST ROLES' if location else 'START HERE' }}</p>
+            <h2 class="h3 mb-0">{{ (jobs|length ~ ' opportunities to explore') if location else 'Choose a city and radius' }}</h2>
           </div>
-          <form class="row gx-2 gy-2 align-items-center" method="get" action="/">
+          <form id="job-search-form" class="row gx-2 gy-2 align-items-center" method="get" action="/">
             <div class="col-auto">
               <label class="visually-hidden" for="location">Location</label>
               <div class="location-search position-relative">
-                <input id="location" name="location" value="{{ location }}" class="form-control" type="search" placeholder="German city or postcode" aria-label="German city or postcode" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="location-suggestions" aria-expanded="false">
+                <input id="location" name="location" value="{{ location }}" class="form-control" type="search" placeholder="German city or postcode" aria-label="German city or postcode" autocomplete="off" required minlength="2" role="combobox" aria-autocomplete="list" aria-controls="location-suggestions" aria-expanded="false">
                 <div id="location-suggestions" class="list-group position-absolute top-100 start-0 end-0 shadow d-none" role="listbox"></div>
               </div>
             </div>
@@ -80,15 +80,21 @@
               <label class="form-check-label" for="remote-only">Remote only</label>
             </div>
             <div class="col-auto">
-              <button class="btn btn-dark" type="submit">Search</button>
+              <button id="download-button" class="btn btn-dark" type="submit">Download roles</button>
             </div>
             {% if location or remote_only %}
               <div class="col-auto"><a class="btn btn-link text-secondary" href="/">Clear</a></div>
             {% endif %}
+            <div id="download-progress" class="col-12 d-none" role="status" aria-live="polite">
+              <div class="progress" aria-label="Downloading jobs">
+                <div class="progress-bar progress-bar-striped progress-bar-animated w-100">Downloading latest roles…</div>
+              </div>
+            </div>
           </form>
         </div>
 
-        <div class="row g-4">
+        {% if location %}
+          <div class="row g-4">
           {% for job in jobs %}
             <div class="col-md-6 col-xl-4">
               <article class="job-card card">
@@ -112,7 +118,12 @@
           {% else %}
             <div class="col-12"><div class="empty-state">No roles match this filter yet. Try widening your search.</div></div>
           {% endfor %}
-        </div>
+          </div>
+        {% else %}
+          <div class="loading-state">
+            Enter a city and radius to download a focused set of recent roles.
+          </div>
+        {% endif %}
       </section>
     </main>
 

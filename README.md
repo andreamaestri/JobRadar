@@ -339,11 +339,17 @@ http://127.0.0.1:8000
 
 From here on, everything works offline until you choose to sync again.
 
+The latest downloaded job data is stored locally in `.jobradar-cache.json` and
+is used when both providers are unavailable. Each download starts only after
+you choose a city and radius, and is limited to 25 roles. Set
+`JOBRADAR_CACHE_FILE` to choose a different cache location. If no cache exists
+yet, the app shows no synthetic or fallback jobs.
+
 ---
 
 ## Data & Privacy
 
-- The database lives on your machine (default: `jobradar.db` in the project directory; XDG paths respected on Linux).
+- The job cache lives on your machine (default: `.jobradar-cache.json` in the project directory; override it with `JOBRADAR_CACHE_FILE`).
 - No telemetry, no accounts, no tracking.
 - Job-search history can be sensitive — exports and backups are explicit user actions.
 - API keys (where required) are read from environment variables only and never logged.

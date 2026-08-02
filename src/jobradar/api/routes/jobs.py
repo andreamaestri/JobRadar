@@ -11,9 +11,17 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 @router.get("/preview")
 def read_jobs_preview(
+    location: Annotated[
+        str,
+        Query(min_length=2, max_length=80, description="German city or postcode"),
+    ],
+    radius_km: Annotated[
+        int,
+        Query(ge=5, le=500, description="Search radius in kilometres"),
+    ] = 50,
     limit: Annotated[
         int,
-        Query(ge=1, le=50, description="Maximum number of jobs to return"),
+        Query(ge=1, le=25, description="Maximum number of jobs to return"),
     ] = 10,
     remote_only: Annotated[
         bool,
@@ -21,7 +29,12 @@ def read_jobs_preview(
     ] = False,
 ) -> JobPreviewResponse:
     try:
-        return preview_jobs(limit=limit, remote_only=remote_only)
+        return preview_jobs(
+            limit=limit,
+            remote_only=remote_only,
+            location=location,
+            radius_km=radius_km,
+        )
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=502,
