@@ -14,19 +14,14 @@ from jobradar.schemas.job import Job
 from jobradar.services.sync import preview_jobs
 
 CITY_COORDINATES = {
-    "amsterdam": (52.3676, 4.9041),
-    "barcelona": (41.3874, 2.1686),
     "berlin": (52.5200, 13.4050),
     "cologne": (50.9375, 6.9603),
     "frankfurt": (50.1109, 8.6821),
     "hamburg": (53.5511, 9.9937),
-    "london": (51.5074, -0.1278),
     "munich": (48.1351, 11.5820),
-    "paris": (48.8566, 2.3522),
-    "vienna": (48.2082, 16.3738),
-    "zurich": (47.3769, 8.5417),
 }
 GEOCODING_API_URL = "https://geocoding-api.open-meteo.com/v1/search"
+GEOCODING_COUNTRY_CODE = "DE"
 
 app = FastAPI()
 
@@ -156,6 +151,7 @@ def _search_locations(
             params={
                 "name": location,
                 "count": 6,
+                "countryCode": GEOCODING_COUNTRY_CODE,
                 "language": "en",
                 "format": "json",
             },
