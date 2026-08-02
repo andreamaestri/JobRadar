@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from html import unescape
 from typing import Any
 
 import httpx
@@ -10,18 +11,45 @@ ARBEITNOW_API_URL = "https://www.arbeitnow.com/api/job-board-api"
 
 
 def fetch_arbeitnow_jobs(*, limit: int, remote_only: bool = False) -> list[Job]:
-    response = httpx.get(ARBEITNOW_API_URL, timeout=15.0)
-    response.raise_for_status()
+    if limit <= 0:
+        return []
 
-    payload = response.json()
-    raw_jobs = payload.get("data", [])
+    jobs: list[Job] = []
+    page = 1
+    while len(jobs) < limit:
+        response = httpx.get(
+            ARBEITNOW_API_URL,
+            params={"page": page},
+            timeout=15.0,
+        )
+        response.raise_for_status()
 
-    jobs = [
-        _normalize_arbeitnow_job(raw_job)
-        for raw_job in raw_jobs
-        if _include_job(raw_job, remote_only=remote_only)
-    ]
-    return jobs[:limit]
+        payload = response.json()
+        if not isinstance(payload, dict):
+            break
+
+        raw_jobs = payload.get("data", [])
+        if not isinstance(raw_jobs, list):
+            break
+
+        for raw_job in raw_jobs:
+            if not isinstance(raw_job, dict) or not _include_job(
+                raw_job, remote_only=remote_only
+            ):
+                continue
+            try:
+                jobs.append(_normalize_arbeitnow_job(raw_job))
+            except (KeyError, TypeError, ValueError):
+                continue
+            if len(jobs) >= limit:
+                return jobs
+
+        links = payload.get("links")
+        if not isinstance(links, dict) or not links.get("next"):
+            break
+        page += 1
+
+    return jobs
 
 
 def _include_job(raw_job: dict[str, Any], *, remote_only: bool) -> bool:
@@ -34,7 +62,13 @@ def _normalize_arbeitnow_job(raw_job: dict[str, Any]) -> Job:
     created_at = raw_job.get("created_at")
     posted_at = None
     if isinstance(created_at, (int, float)):
-        posted_at = datetime.fromtimestamp(created_at, tz=timezone.utc)
+        posted_at = datetime.fromtimestamp(created_at, tz=UTC)
+
+    description = raw_job.get("description", "")
+    if not isinstance(description, str):
+        description = str(description)
+    if "&lt;" in description or "&gt;" in description:
+        description = unescape(description)
 
     return Job(
         source=ARBEITNOW_SOURCE,
@@ -44,7 +78,7 @@ def _normalize_arbeitnow_job(raw_job: dict[str, Any]) -> Job:
         location=raw_job.get("location"),
         remote=bool(raw_job.get("remote")),
         url=raw_job["url"],
-        description_html=raw_job.get("description", ""),
+        description_html=description,
         tags=_coerce_string_list(raw_job.get("tags")),
         job_types=_coerce_string_list(raw_job.get("job_types")),
         posted_at=posted_at,
